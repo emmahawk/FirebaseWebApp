@@ -3,6 +3,16 @@
  */
 
 var firebase = require("firebase");
+var util = require("util");
+var nodeimu = require("nodeimu");
+var IMU = new nodeimu.IMU();
+var sense = require("sense-hat-led").sync;
+
+var light_r_value = 0;
+var light_g_value = 0;
+var light_b_value = 0;
+var light_row_value = 0;
+var light_column_value = 0;
 
 // Initialize Firebase
 var config = {
@@ -37,6 +47,12 @@ function updateData(humidity, temperature) {
     });
 }
 
+function resetUpdateLightToFalse() {
+    firebase.database().ref().update({
+        "Update_Light": false
+    });
+}
+
 var myVar = setInterval(function(){ recurringFunction() }, 5000);
 
 function recurringFunction() {
@@ -45,9 +61,12 @@ function recurringFunction() {
     var t = d.toLocaleTimeString();
 
     // Get data from sensors
+    var data = IMU.getValueSync();
+    var humidity = data.humidity;
+    var temperature = data.temperature;
 
     // Write data to firebase
-    updateData(0, 0);
+    updateData(humidity.toFixed(4), temperature.toFixed(4));
 
     console.log("Updated firebase data at " + t);
 }
@@ -55,6 +74,7 @@ function recurringFunction() {
 // Light_R is changed
 firebase.database().ref().child("Light_R").on("value", function(snapshot) {
     console.log("Light_R value changed to " + snapshot.val());
+    light_r_value = snapshot.val();
 }, function (errorObject) {
     console.log("The read failed: " + errorObject.code);
 });
@@ -62,6 +82,7 @@ firebase.database().ref().child("Light_R").on("value", function(snapshot) {
 // Light_G is changed
 firebase.database().ref().child("Light_G").on("value", function(snapshot) {
     console.log("Light_G value changed to " + snapshot.val());
+    light_g_value = snapshot.val();
 }, function (errorObject) {
     console.log("The read failed: " + errorObject.code);
 });
@@ -69,6 +90,7 @@ firebase.database().ref().child("Light_G").on("value", function(snapshot) {
 // Light_B is changed
 firebase.database().ref().child("Light_B").on("value", function(snapshot) {
     console.log("Light_B value changed to " + snapshot.val());
+    light_b_value = snapshot.val();
 }, function (errorObject) {
     console.log("The read failed: " + errorObject.code);
 });
@@ -76,6 +98,7 @@ firebase.database().ref().child("Light_B").on("value", function(snapshot) {
 // Light_Row is changed
 firebase.database().ref().child("Light_Row").on("value", function(snapshot) {
     console.log("Light_Row value changed to " + snapshot.val());
+    light_row_value = snapshot.val();
 }, function (errorObject) {
     console.log("The read failed: " + errorObject.code);
 });
@@ -83,13 +106,23 @@ firebase.database().ref().child("Light_Row").on("value", function(snapshot) {
 // Light_Column is changed
 firebase.database().ref().child("Light_Column").on("value", function(snapshot) {
     console.log("Light_Column value changed to " + snapshot.val());
+    light_column_value = snapshot.val();
 }, function (errorObject) {
     console.log("The read failed: " + errorObject.code);
 });
 
 // Update_Light is changed
 firebase.database().ref().child("Update_Light").on("value", function(snapshot) {
-    console.log("Update_Light value changed to " + snapshot.val());
+    var valueData = snapshot.val();
+    console.log("Update_Light value changed to " + valueData);
+
+    if (valueData == true) {
+        console.log("~~~~~~ IT'S SOOOO TRUUUUU ~~~~~~");
+        sense.setPixel(light_row_value, light_column_value, light_r_value, light_g_value, light_b_value);
+        resetUpdateLightToFalse();
+    } else {
+        console.log("~~~~~~ Do you not enjoy colorful lights??? ~~~~~~");
+    }
 }, function (errorObject) {
     console.log("The read failed: " + errorObject.code);
 });
