@@ -6,7 +6,7 @@ var firebase = require("firebase");
 var util = require("util");
 var nodeimu = require("nodeimu");
 var IMU = new nodeimu.IMU();
-var sense = require("sense-hat-led").sync;
+var sense = require("sense-hat-led");
 
 var light_r_value = 0;
 var light_g_value = 0;
@@ -53,7 +53,7 @@ function resetUpdateLightToFalse() {
     });
 }
 
-var myVar = setInterval(function(){ recurringFunction() }, 5000);
+var myVar = setInterval(function(){ recurringFunction() }, 60000);
 
 function recurringFunction() {
     // Timestamp data
@@ -62,18 +62,19 @@ function recurringFunction() {
 
     // Get data from sensors
     var data = IMU.getValueSync();
-    var humidity = data.humidity;
-    var temperature = data.temperature;
+    var humidity = data.humidity.toFixed(4);
+    var temperature = data.temperature.toFixed(4);
 
     // Write data to firebase
-    updateData(humidity.toFixed(4), temperature.toFixed(4));
+    updateData(humidity, temperature);
 
-    console.log("Updated firebase data at " + t);
+    console.log("Updated firebase humidity data to " + humidity + "at " + t);
+    console.log("Updated firebase temperature data to " + temperature + "at " + t);
 }
 
 // Light_R is changed
 firebase.database().ref().child("Light_R").on("value", function(snapshot) {
-    console.log("Light_R value changed to " + snapshot.val());
+    //console.log("Light_R value changed to " + snapshot.val());
     light_r_value = snapshot.val();
 }, function (errorObject) {
     console.log("The read failed: " + errorObject.code);
@@ -81,7 +82,7 @@ firebase.database().ref().child("Light_R").on("value", function(snapshot) {
 
 // Light_G is changed
 firebase.database().ref().child("Light_G").on("value", function(snapshot) {
-    console.log("Light_G value changed to " + snapshot.val());
+    //console.log("Light_G value changed to " + snapshot.val());
     light_g_value = snapshot.val();
 }, function (errorObject) {
     console.log("The read failed: " + errorObject.code);
@@ -89,7 +90,7 @@ firebase.database().ref().child("Light_G").on("value", function(snapshot) {
 
 // Light_B is changed
 firebase.database().ref().child("Light_B").on("value", function(snapshot) {
-    console.log("Light_B value changed to " + snapshot.val());
+    //console.log("Light_B value changed to " + snapshot.val());
     light_b_value = snapshot.val();
 }, function (errorObject) {
     console.log("The read failed: " + errorObject.code);
@@ -97,7 +98,7 @@ firebase.database().ref().child("Light_B").on("value", function(snapshot) {
 
 // Light_Row is changed
 firebase.database().ref().child("Light_Row").on("value", function(snapshot) {
-    console.log("Light_Row value changed to " + snapshot.val());
+    //console.log("Light_Row value changed to " + snapshot.val());
     light_row_value = snapshot.val();
 }, function (errorObject) {
     console.log("The read failed: " + errorObject.code);
@@ -105,7 +106,7 @@ firebase.database().ref().child("Light_Row").on("value", function(snapshot) {
 
 // Light_Column is changed
 firebase.database().ref().child("Light_Column").on("value", function(snapshot) {
-    console.log("Light_Column value changed to " + snapshot.val());
+    //console.log("Light_Column value changed to " + snapshot.val());
     light_column_value = snapshot.val();
 }, function (errorObject) {
     console.log("The read failed: " + errorObject.code);
@@ -114,14 +115,12 @@ firebase.database().ref().child("Light_Column").on("value", function(snapshot) {
 // Update_Light is changed
 firebase.database().ref().child("Update_Light").on("value", function(snapshot) {
     var valueData = snapshot.val();
-    console.log("Update_Light value changed to " + valueData);
+    //console.log("Update_Light value changed to " + valueData);
 
     if (valueData == true) {
-        console.log("~~~~~~ IT'S SOOOO TRUUUUU ~~~~~~");
         sense.setPixel(light_row_value, light_column_value, light_r_value, light_g_value, light_b_value);
+        console.log("Changed light at (" + light_row_value + ", " + light_column_value + ")" + "to [" + light_r_value + ", " + light_g_value + ", " + light_b_value + "]");
         resetUpdateLightToFalse();
-    } else {
-        console.log("~~~~~~ Do you not enjoy colorful lights??? ~~~~~~");
     }
 }, function (errorObject) {
     console.log("The read failed: " + errorObject.code);
