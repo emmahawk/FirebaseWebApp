@@ -37,25 +37,7 @@ function initializeFirebaseSchema(humidity, temperature, light_r, light_g, light
     });
 }
 
-// Initial database write
-initializeFirebaseSchema(0, 0, 255, 255, 255, 0, 0, false);
-
-function updateData(humidity, temperature) {
-    firebase.database().ref().update({
-        "Humidity": humidity,
-        "Temperature": temperature
-    });
-}
-
-function resetUpdateLightToFalse() {
-    firebase.database().ref().update({
-        "Update_Light": false
-    });
-}
-
-var myVar = setInterval(function(){ recurringFunction() }, 60000);
-
-function recurringFunction() {
+function updateData() {
     // Timestamp data
     var d = new Date();
     var t = d.toLocaleTimeString();
@@ -66,11 +48,34 @@ function recurringFunction() {
     var temperature = data.temperature.toFixed(4);
 
     // Write data to firebase
-    updateData(humidity, temperature);
+    firebase.database().ref().update({
+        "Humidity": humidity,
+        "Temperature": temperature
+    });
 
-    console.log("Updated firebase humidity data to " + humidity + "at " + t);
-    console.log("Updated firebase temperature data to " + temperature + "at " + t);
+    console.log("Updated firebase humidity data to " + humidity + " at " + t);
+    console.log("Updated firebase temperature data to " + temperature + " at " + t);
 }
+
+function resetUpdateLightToFalse() {
+    firebase.database().ref().update({
+        "Update_Light": false
+    });
+}
+
+// Initial database write
+initializeFirebaseSchema(0, 0, 255, 255, 255, 0, 0, false);
+sense.clear();
+updateData();
+
+// Call recurring function
+var myVar = setInterval(function(){ updateData() }, 60000);
+
+
+
+
+
+// ~~~~~~~~~~~~~~~ Light Data Listeners // ~~~~~~~~~~~~~~~
 
 // Light_R is changed
 firebase.database().ref().child("Light_R").on("value", function(snapshot) {
@@ -117,9 +122,10 @@ firebase.database().ref().child("Update_Light").on("value", function(snapshot) {
     var valueData = snapshot.val();
     //console.log("Update_Light value changed to " + valueData);
 
+    // Change light on SenseHat array if Update_Light is true
     if (valueData == true) {
         sense.setPixel(light_row_value, light_column_value, light_r_value, light_g_value, light_b_value);
-        console.log("Changed light at (" + light_row_value + ", " + light_column_value + ")" + "to [" + light_r_value + ", " + light_g_value + ", " + light_b_value + "]");
+        console.log("Changed light at (" + light_row_value + ", " + light_column_value + ")" + " to [" + light_r_value + ", " + light_g_value + ", " + light_b_value + "]");
         resetUpdateLightToFalse();
     }
 }, function (errorObject) {
